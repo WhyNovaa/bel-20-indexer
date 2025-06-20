@@ -73,43 +73,4 @@ impl Server {
                 .collect(),
         ))
     }
-
-    pub fn generate_history_hash(
-        prev_history_hash: sha256::Hash,
-        history: &[(AddressTokenIdDB, HistoryValue)],
-        addresses: &AddressesFullHash,
-    ) -> anyhow::Result<sha256::Hash> {
-        let current_hash = if history.is_empty() {
-            *DEFAULT_HASH
-        } else {
-            let mut buffer = Vec::<u8>::new();
-
-            for (address_token, action) in history {
-                let rest = rest::types::History {
-                    height: action.height,
-                    action: rest::types::TokenAction::from_with_addresses(
-                        action.action.clone(),
-                        addresses,
-                    ),
-                    address_token: rest::types::AddressTokenId {
-                        address: addresses.get(&address_token.address),
-                        id: address_token.id,
-                        tick: address_token.token,
-                    },
-                };
-                let bytes = serde_json::to_vec(&rest)?;
-                buffer.extend(bytes);
-            }
-
-            sha256::Hash::hash(&buffer)
-        };
-
-        let new_hash = {
-            let mut buffer = prev_history_hash.as_byte_array().to_vec();
-            buffer.extend_from_slice(current_hash.as_byte_array());
-            sha256::Hash::hash(&buffer)
-        };
-
-        Ok(new_hash)
-    }
 }
