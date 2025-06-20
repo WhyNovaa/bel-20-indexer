@@ -24,6 +24,7 @@ pub struct Parser<'a> {
     pub server: &'a Server,
     pub reorg_cache: Option<Arc<parking_lot::Mutex<ReorgCache>>>,
     pub token_cache: &'a mut TokenCache,
+    pub last_inscription_number: u64,
 }
 
 impl Parser<'_> {
@@ -82,6 +83,7 @@ impl Parser<'_> {
                         let old_location = Location {
                             outpoint: txin.outpoint,
                             offset: inscription_offset,
+                            number: 0, // todo
                         };
 
                         let is_token_transfer_move =
@@ -111,7 +113,7 @@ impl Parser<'_> {
                                             .script_pubkey
                                             .clone(),
                                     )
-                                    .is_op_return()
+                                        .is_op_return()
                                     {
                                         self.token_cache.burned_transfer(
                                             old_location,
@@ -147,7 +149,7 @@ impl Parser<'_> {
                                 leaked.as_mut().unwrap().add(
                                     input_index,
                                     tx,
-                                    inscription_offset,
+                                    offset.unwrap_or_default(),
                                     prevouts,
                                     LeakedInscription::Move,
                                 );
@@ -224,28 +226,9 @@ impl Parser<'_> {
                         }
                     };
 
-                    for inscription_template in inscription_templates {
-                        let mut offset_occupied = !inscription_outpoint_to_offsets
-                            .entry(inscription_template.location.outpoint)
-                            .or_default()
-                            .insert(inscription_template.location.offset); // return false if item already exist
-
-                        // This is only for BELLS
-                        if *JUBILEE_HEIGHT == 133_000 {
-                            offset_occupied = false;
-                        }
-
-                        // skip inscription which was created into occupied offset
-                        if !inscription_template.leaked && offset_occupied && !is_jubilee_height {
-                            continue;
-                        }
-
-                        // handle token deploy|mint|transfer creation
-                        self.token_cache.parse_token_action(
-                            &inscription_template,
-                            height,
-                            block.header.value.timestamp,
-                        );
+                    for mut inscription_template in inscription_templates {
+                        inscription_template.location.number = self.last_inscription_number;
+                        self.last_inscription_number = self.last_inscription_number.saturating_add(1);
                     }
                 }
             }
@@ -280,6 +263,10 @@ impl Parser<'_> {
                 to_write: inscription_outpoint_to_offsets.into_iter().collect(),
             });
         }
+    }
+
+    pub fn write_inscription_number(&self) {
+        self.server.db.last_inscription_number.set((), self.last_inscription_number)
     }
 
     fn load_partials(server: &Server, outpoints: Vec<OutPoint>) -> HashMap<OutPoint, Partials> {
@@ -351,11 +338,12 @@ impl Parser<'_> {
             content_type,
             genesis,
             location: Location {
-                offset: 0,
                 outpoint: OutPoint {
                     txid: payload.tx.hash.into(),
                     vout: payload.input_index,
                 },
+                offset: 0,
+                number: 0,
             },
             owner: FullHash::ZERO,
             value: 0,
@@ -392,6 +380,7 @@ impl Parser<'_> {
                 vout,
             },
             offset,
+            number: 0,
         };
 
         let tx_out = &payload.tx.value.outputs[vout as usize];

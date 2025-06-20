@@ -18,7 +18,22 @@ rocksdb_wrapper::generate_db_code! {
     block_events: u32 => UsingSerde<Vec<AddressTokenIdDB>>,
     fullhash_to_address: FullHash => String,
     outpoint_to_event: UsingConsensus<OutPoint> => AddressTokenIdDB,
+    // NEW
+    last_inscription_number: () => u64,
 }
+/*
+generate_db_code! {
+    +partials: UsingConsensus<OutPoint> => UsingSerde<Partial>,
+    address_to_stats: FullHash => UsingSerde<AddressStat>,
+    address_location_to_inscription: AddressLocation => UsingSerde<InscriptionMeta>,
+    last_inscription_number: () => u64,
+    utxos_cache: AddressOutPoint => (),
+    last_block: () => u32,
+    genesis_to_location: InscriptionId => AddressLocation,
+    scripthash_to_address: FullHash => String,
+    +outpoint_to_inscription_offsets: UsingConsensus<OutPoint> => UsingSerde<HashSet<(Offset, Number)>>,
+}
+*/
 
 impl DB {
     pub fn load_token_accounts(
@@ -38,8 +53,7 @@ impl DB {
     ) -> Vec<(Location, (FullHash, TransferProtoDB))> {
         keys.iter()
             .flat_map(|x| {
-                let (from, to) =
-                    AddressLocation::search_with_offset(x.address, x.outpoint).into_inner();
+                let (from, to) = AddressLocation::search(x.address, Some(x.outpoint)).into_inner();
                 self.address_location_to_transfer
                     .range(&from..=&to, false)
                     .collect_vec()

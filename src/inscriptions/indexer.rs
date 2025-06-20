@@ -146,10 +146,13 @@ impl InscriptionIndexer {
             })
             .collect::<HashSet<_>>();
 
+        let last_inscription_number = self.server.db.last_inscription_number.get(()).unwrap_or_default();
+
         let mut parser = Parser {
             token_cache: &mut token_cache,
             server: &self.server,
             reorg_cache: self.reorg_cache.clone(),
+            last_inscription_number,
         };
 
         parser.parse_block(block_height, block, &prevouts, &mut to_write.processed);
@@ -275,6 +278,8 @@ impl InscriptionIndexer {
             new_proof,
             current_hash.into(),
         ));
+
+        parser.write_inscription_number();
 
         Ok(())
     }

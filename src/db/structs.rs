@@ -87,6 +87,7 @@ impl AddressLocation {
             location: Location {
                 outpoint,
                 offset: 0,
+                number: 0,
             },
         };
         let end = Self {
@@ -94,6 +95,7 @@ impl AddressLocation {
             location: Location {
                 outpoint,
                 offset: u64::MAX,
+                number: u64::MAX,
             },
         };
 
@@ -113,6 +115,7 @@ impl AddressLocation {
                     vout: 0,
                 },
                 offset: 0,
+                number: 0,
             },
         };
         let end = Self {
@@ -123,6 +126,7 @@ impl AddressLocation {
                     vout: u32::MAX,
                 },
                 offset: u64::MAX,
+                number: u64::MAX,
             },
         };
 
@@ -135,6 +139,7 @@ impl AddressLocation {
             location: Location {
                 outpoint: offset,
                 offset: 0,
+                number: 0,
             },
         };
         let end = Self {
@@ -145,6 +150,7 @@ impl AddressLocation {
                     vout: u32::MAX,
                 },
                 offset: u64::MAX,
+                number: u64::MAX,
             },
         };
 
@@ -162,6 +168,7 @@ impl rocksdb_wrapper::Pebble for AddressLocation {
 
         result.extend(consensus::serialize(&v.location.outpoint));
         result.extend(v.location.offset.to_be_bytes());
+        result.extend(v.location.number.to_be_bytes());
 
         Cow::Owned(result)
     }
@@ -169,11 +176,12 @@ impl rocksdb_wrapper::Pebble for AddressLocation {
     fn from_bytes(v: Cow<[u8]>) -> anyhow::Result<Self::Inner> {
         let address = v[..32].try_into().anyhow()?;
         let outpoint: OutPoint = consensus::deserialize(&v[32..32 + 36])?;
-        let offset = u64::from_be_bytes(v[32 + 32 + 4..].try_into().anyhow()?);
+        let offset = u64::from_be_bytes(v[32 + 36..32 + 36 + 8].try_into().anyhow()?);
+        let number = u64::from_be_bytes(v[32 + 36 + 8..].try_into().anyhow()?);
 
         Ok(Self {
             address,
-            location: Location { outpoint, offset },
+            location: Location { outpoint, offset, number },
         })
     }
 }

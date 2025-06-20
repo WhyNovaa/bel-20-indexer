@@ -87,11 +87,12 @@ impl LeakedInscriptions {
             .filter_map(move |(offset, _)| {
                 self.find_inscription_vout(offset)
                     .map(|(vout, offset)| Location {
-                        offset,
                         outpoint: OutPoint {
                             txid: self.coinbase_tx.hash.into(),
                             vout,
                         },
+                        offset,
+                        number: 0,
                     })
             })
     }

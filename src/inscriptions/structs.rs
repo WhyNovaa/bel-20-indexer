@@ -303,6 +303,7 @@ impl InscriptionParser {
 pub struct Location {
     pub outpoint: OutPoint,
     pub offset: u64,
+    pub number: u64,
 }
 
 impl Display for Location {
@@ -334,10 +335,11 @@ impl FromStr for Location {
             .anyhow_with(error_msg)?
             .parse()
             .anyhow_with("Invalid offset")?;
-
+        let number: u64 = items.next().unwrap_or("0").parse().anyhow_with("Invalid number")?;
         Ok(Self {
-            offset,
             outpoint: OutPoint { txid, vout },
+            offset,
+            number
         })
     }
 }
