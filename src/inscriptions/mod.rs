@@ -25,25 +25,17 @@ pub use structs::Location;
 
 pub struct Indexer {
     server: Arc<Server>,
-    reorg_cache: Arc<parking_lot::Mutex<ReorgCache>>,
 }
 
 impl Indexer {
     pub fn new(server: Arc<Server>) -> Self {
         Self {
-            reorg_cache: Arc::new(parking_lot::Mutex::new(ReorgCache::new())),
             server,
         }
     }
 
     pub fn run(self) -> anyhow::Result<()> {
         self.index()?;
-
-        self.reorg_cache
-            .lock()
-            .restore_all(&self.server)
-            .track()
-            .ok();
 
         self.server.db.flush_all();
 
@@ -53,7 +45,7 @@ impl Indexer {
     fn index(&self) -> anyhow::Result<()> {
         let rx = self.server.indexer.clone().parse_blocks();
 
-        let mut indexer = InscriptionIndexer::new(self.server.clone(), None);
+        let mut indexer = InscriptionIndexer::new(self.server.clone());
 
         let mut progress: Option<Progress> = Some(Progress::begin(
             "Indexing",
@@ -66,9 +58,9 @@ impl Indexer {
             let Ok(data) = rx.recv() else {
                 break;
             };
-            if let Some(progress) = progress.as_mut() {
+            /*if let Some(progress) = progress.as_mut() {
                 progress.update_len(data.tip.saturating_sub(REORG_CACHE_MAX_LEN as u64));
-            }
+            }*/
 
             let BlockEvent {
                 block,
@@ -77,10 +69,10 @@ impl Indexer {
                 reorg_len,
             } = data;
 
-            if id.height > tip - REORG_CACHE_MAX_LEN as u64 && indexer.reorg_cache.is_none() {
+            /*if id.height > tip - REORG_CACHE_MAX_LEN as u64 && indexer.reorg_cache.is_none() {
                 indexer.reorg_cache = Some(self.reorg_cache.clone());
                 progress.take();
-            }
+            }*/
 
             if reorg_len > 0 {
                 warn!("Reorg detected: {} blocks", reorg_len);
@@ -88,13 +80,9 @@ impl Indexer {
                     .unwrap_or_default()
                     .saturating_sub(reorg_len as u64);
 
-                self.reorg_cache
+                /*self.reorg_cache
                     .lock()
-                    .restore(&self.server, restore_height as u32)?;
-                self.server
-                    .event_sender
-                    .send(ServerEvent::Reorg(reorg_len as u32, id.height as u32))
-                    .ok();
+                    .restore(&self.server, restore_height as u32)?;*/
             }
 
             indexer.handle(id.height as u32, block).track()?;

@@ -6,8 +6,6 @@ pub use structs::*;
 
 pub struct Server {
     pub db: Arc<DB>,
-    pub event_sender: tokio::sync::broadcast::Sender<ServerEvent>,
-    pub raw_event_sender: kanal::Sender<RawServerEvent>,
     pub token: WaitToken,
     pub holders: Arc<Holders>,
     pub indexer: Arc<nint_blk::Indexer>,
@@ -16,13 +14,7 @@ pub struct Server {
 impl Server {
     pub fn new(
         db_path: &str,
-    ) -> anyhow::Result<(
-        kanal::Receiver<RawServerEvent>,
-        tokio::sync::broadcast::Sender<ServerEvent>,
-        Self,
-    )> {
-        let (raw_tx, raw_rx) = kanal::unbounded();
-        let (tx, _) = tokio::sync::broadcast::channel(30_000);
+    ) -> anyhow::Result<Self> {
         let token = WaitToken::default();
         let db = Arc::new(DB::open(db_path));
 
@@ -39,7 +31,7 @@ impl Server {
             coin,
             last_height: db.last_block.get(()).unwrap_or_default(),
             path: BLK_DIR.to_string(),
-            reorg_max_len: REORG_CACHE_MAX_LEN,
+            reorg_max_len: 0, // todo set reorg
             rpc_auth: nint_blk::Auth::UserPass(USER.to_string(), PASS.to_string()),
             rpc_url: URL.to_string(),
             token: token.clone(),
@@ -48,14 +40,12 @@ impl Server {
 
         let server = Self {
             holders: Arc::new(Holders::init(&db)),
-            raw_event_sender: raw_tx.clone(),
             token,
-            event_sender: tx.clone(),
             indexer: Arc::new(indexer),
             db,
         };
 
-        Ok((raw_rx, tx, server))
+        Ok(server)
     }
 
     pub fn load_addresses(

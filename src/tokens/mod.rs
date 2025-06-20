@@ -6,6 +6,6 @@ mod proto;
 mod structs;
 
 pub use holders::Holders;
-pub use parser::{HistoryTokenAction, TokenCache};
+pub use parser::{HistoryTokenAction};
 pub use proto::*;
 pub use structs::*;

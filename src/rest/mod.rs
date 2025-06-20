@@ -55,7 +55,6 @@ pub fn get_router(server: Arc<Server>) -> Router {
         )
         .route("/holders", get(holders::holders))
         .route("/holders-stats", get(holders::holders_stats))
-        .route("/events", post(history::subscribe))
         .route("/status", get(info::status))
         .route("/proof-of-history", get(history::proof_of_history))
         .route("/events/{height}", get(history::events_by_height))

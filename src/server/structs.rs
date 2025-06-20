@@ -1,12 +1,5 @@
 use super::*;
 
-#[derive(Clone, Debug)]
-pub enum ServerEvent {
-    NewHistory(AddressTokenIdEvent, HistoryValueEvent),
-    Reorg(u32, u32),
-    NewBlock(u32, sha256::Hash, BlockHash),
-}
-
 pub type RawServerEvent = Vec<(AddressTokenIdDB, HistoryValue)>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]

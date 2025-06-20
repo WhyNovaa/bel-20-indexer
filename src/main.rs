@@ -3,7 +3,6 @@ extern crate serde;
 extern crate tracing;
 
 use {
-    crate::server::threads::EventSender,
     axum::{
         body::Body,
         extract::{Path, Query, State},
@@ -24,11 +23,10 @@ use {
     inscriptions::{Indexer, Location},
     itertools::Itertools,
     num_traits::{FromPrimitive, Zero},
-    reorg::{ReorgCache, REORG_CACHE_MAX_LEN},
     rocksdb_wrapper::{RocksDB, RocksTable, UsingConsensus, UsingSerde},
     serde::{Deserialize, Deserializer, Serialize, Serializer},
     serde_with::{serde_as, DisplayFromStr},
-    server::{Server, ServerEvent},
+    server::{Server},
     std::{
         borrow::Cow,
         collections::{BTreeMap, BTreeSet, HashMap, HashSet},
@@ -85,7 +83,6 @@ define_static! {
     };
     SERVER_URL: String =
         load_opt_env!("SERVER_BIND_URL").unwrap_or("0.0.0.0:8000".to_string());
-    DEFAULT_HASH: sha256::Hash = sha256::Hash::hash("null".as_bytes());
     DB_PATH: String = load_opt_env!("DB_PATH").unwrap_or("rocksdb".to_string());
 }
 
@@ -105,7 +102,7 @@ fn main() {
         &*SERVER_URL,
     );
 
-    let (raw_event_tx, event_tx, server) = Server::new(&DB_PATH).unwrap();
+    let server = Server::new(&DB_PATH).unwrap();
 
     let server = Arc::new(server);
 
@@ -117,23 +114,12 @@ fn main() {
         rest_runtime.block_on(run_rest(rest_server))
     });
 
-    let event_sender = EventSender {
-        event_tx,
-        raw_event_tx,
-        server: server.clone(),
-    };
-
-    let event_sender = std::thread::spawn(move || event_sender.run());
-
     let main_result = Indexer::new(server.clone()).run();
     server.token.cancel();
 
     info!("Server is finished");
 
-    let event_sender_result = event_sender.join().unwrap();
-
     main_result.track().ok();
-    event_sender_result.track().ok();
 }
 
 async fn run_rest(server: Arc<Server>) -> anyhow::Result<()> {

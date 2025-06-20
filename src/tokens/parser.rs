@@ -349,7 +349,7 @@ impl TokenCache {
 
     pub fn process_token_actions(
         &mut self,
-        reorg_cache: Option<Arc<parking_lot::Mutex<ReorgCache>>>,
+        //reorg_cache: Option<Arc<parking_lot::Mutex<ReorgCache>>>,
         holders: &Holders,
     ) -> Vec<HistoryTokenAction> {
         let mut history = vec![];
@@ -383,9 +383,9 @@ impl TokenCache {
                             vout: genesis.index,
                         });
 
-                        if let Some(x) = reorg_cache.as_ref() {
+                       /* if let Some(x) = reorg_cache.as_ref() {
                             x.lock().added_deployed_token(tick);
-                        }
+                        }*/
                     }
                 }
                 TokenAction::Mint {
@@ -447,9 +447,9 @@ impl TokenCache {
                         vout,
                     });
 
-                    if let Some(x) = reorg_cache.as_ref() {
+                    /*if let Some(x) = reorg_cache.as_ref() {
                         x.lock().added_minted_token(key, amt);
-                    }
+                    }*/
                 }
                 TokenAction::Transfer {
                     owner,
@@ -495,9 +495,9 @@ impl TokenCache {
                         continue;
                     }
 
-                    if let Some(x) = reorg_cache.as_ref() {
+                    /*if let Some(x) = reorg_cache.as_ref() {
                         x.lock().added_transfer_token(location, key.clone(), amt);
-                    }
+                    }*/
 
                     account.balance -= amt;
                     account.transfers_count += 1;
@@ -578,7 +578,7 @@ impl TokenCache {
                         vout,
                     });
 
-                    if let Some(x) = reorg_cache.as_ref() {
+                    /*if let Some(x) = reorg_cache.as_ref() {
                         x.lock().removed_transfer_token(
                             AddressLocation {
                                 address: sender,
@@ -591,7 +591,7 @@ impl TokenCache {
                             },
                             recipient,
                         );
-                    }
+                    }*/
                 }
             }
         }
