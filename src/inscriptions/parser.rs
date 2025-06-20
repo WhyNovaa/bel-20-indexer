@@ -23,7 +23,6 @@ pub struct ParseInscription<'a> {
 pub struct Parser<'a> {
     pub server: &'a Server,
     pub reorg_cache: Option<Arc<parking_lot::Mutex<ReorgCache>>>,
-    pub token_cache: &'a mut TokenCache,
     pub last_inscription_number: u64,
 }
 
@@ -80,15 +79,6 @@ impl Parser<'_> {
                     inscription_outpoint_to_offsets.remove(&txin.outpoint)
                 {
                     for inscription_offset in inscription_offsets {
-                        let old_location = Location {
-                            outpoint: txin.outpoint,
-                            offset: inscription_offset,
-                            number: 0, // todo
-                        };
-
-                        let is_token_transfer_move =
-                            self.token_cache.all_transfers.contains_key(&old_location);
-
                         let offset = inputs_cum.get(input_index).map(|x| *x + inscription_offset);
                         match InscriptionSearcher::get_output_index_by_input(
                             offset,
@@ -104,48 +94,8 @@ impl Parser<'_> {
                                     .entry(new_outpoint)
                                     .or_default()
                                     .insert(new_offset);
-
-                                // handle move of token transfer
-                                if is_token_transfer_move {
-                                    if ScriptBuf::from_bytes(
-                                        tx.value.outputs[new_vout as usize]
-                                            .out
-                                            .script_pubkey
-                                            .clone(),
-                                    )
-                                        .is_op_return()
-                                    {
-                                        self.token_cache.burned_transfer(
-                                            old_location,
-                                            txid,
-                                            new_vout,
-                                        );
-                                    } else {
-                                        let owner = bellscoin::hashes::sha256d::Hash::hash(
-                                            &tx.value.outputs[new_vout as usize].out.script_pubkey,
-                                        );
-                                        self.token_cache.transferred(
-                                            old_location,
-                                            owner.into(),
-                                            txid,
-                                            new_vout,
-                                        );
-                                    };
-                                }
                             }
                             Err(_) => {
-                                // handle leaked move of token transfer
-                                if is_token_transfer_move {
-                                    // because of token protocol leaked token amount
-                                    // comeback to owner
-                                    let recipient = prevouts
-                                        .get(&txin.outpoint)
-                                        .expect("Owner of token transfer must exist")
-                                        .script_pubkey
-                                        .compute_script_hash();
-                                    self.token_cache
-                                        .transferred(old_location, recipient, txid, 0);
-                                }
                                 leaked.as_mut().unwrap().add(
                                     input_index,
                                     tx,

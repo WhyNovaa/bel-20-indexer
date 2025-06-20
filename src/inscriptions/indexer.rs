@@ -149,7 +149,6 @@ impl InscriptionIndexer {
         let last_inscription_number = self.server.db.last_inscription_number.get(()).unwrap_or_default();
 
         let mut parser = Parser {
-            token_cache: &mut token_cache,
             server: &self.server,
             reorg_cache: self.reorg_cache.clone(),
             last_inscription_number,
