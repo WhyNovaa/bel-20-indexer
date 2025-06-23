@@ -12,7 +12,7 @@ mod searcher;
 pub mod structs;
 mod tag;
 mod utils;
-
+mod reorg_history;
 use envelope::{ParsedEnvelope, RawEnvelope};
 use indexer::InscriptionIndexer;
 use nint_blk::BlockEvent;
@@ -45,9 +45,9 @@ impl Indexer {
     fn index(&self) -> anyhow::Result<()> {
         let rx = self.server.indexer.clone().parse_blocks();
 
-        let mut indexer = InscriptionIndexer::new(self.server.clone());
+        let indexer = InscriptionIndexer::new(self.server.clone());
 
-        let mut progress: Option<Progress> = Some(Progress::begin(
+        let progress: Option<Progress> = Some(Progress::begin(
             "Indexing",
             self.server.indexer.last_height as u64,
             self.server.indexer.last_height as u64,

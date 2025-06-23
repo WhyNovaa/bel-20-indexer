@@ -28,38 +28,6 @@ const NOT_FOUND: &str = "Not found";
 
 pub fn get_router(server: Arc<Server>) -> Router {
     Router::new()
-        .route("/address/{address}", get(address::address_tokens))
-        .route("/address/{address}/tokens", get(address::address_tokens))
-        .route(
-            "/address/{address}/tokens/{tick}",
-            get(address::search_address_tokens),
-        )
-        .route(
-            "/address/{address}/history",
-            get(history::address_token_history),
-        )
-        .route(
-            "/address/{address}/tokens-tick",
-            get(address::address_tokens_tick),
-        )
-        .route(
-            "/address/{address}/{tick}/balance",
-            get(address::address_token_balance),
-        )
-        .route("/tokens", get(tokens::tokens))
-        .route("/token/all", get(info::all_tokens))
-        .route("/token", get(tokens::token))
-        .route(
-            "/token/proof/{address}/{outpoint}",
-            get(tokens::token_transfer_proof),
-        )
-        .route("/holders", get(holders::holders))
-        .route("/holders-stats", get(holders::holders_stats))
-        .route("/status", get(info::status))
-        .route("/proof-of-history", get(history::proof_of_history))
-        .route("/events/{height}", get(history::events_by_height))
-        .route("/all-addresses", get(info::all_addresses))
-        .route("/txid/{txid}", get(history::txid_events))
         .with_state(server)
         .layer(CompressionLayer::new())
 }

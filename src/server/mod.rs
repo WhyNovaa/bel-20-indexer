@@ -7,7 +7,6 @@ pub use structs::*;
 pub struct Server {
     pub db: Arc<DB>,
     pub token: WaitToken,
-    pub holders: Arc<Holders>,
     pub indexer: Arc<nint_blk::Indexer>,
 }
 
@@ -39,28 +38,11 @@ impl Server {
         };
 
         let server = Self {
-            holders: Arc::new(Holders::init(&db)),
             token,
             indexer: Arc::new(indexer),
             db,
         };
 
         Ok(server)
-    }
-
-    pub fn load_addresses(
-        &self,
-        keys: impl IntoIterator<Item = FullHash>,
-    ) -> anyhow::Result<AddressesFullHash> {
-        let keys = keys.into_iter().collect::<HashSet<_>>();
-
-        Ok(AddressesFullHash::new(
-            self.db
-                .fullhash_to_address
-                .multi_get_kv(keys.iter(), false)
-                .into_iter()
-                .map(|(k, v)| (*k, v))
-                .collect(),
-        ))
     }
 }

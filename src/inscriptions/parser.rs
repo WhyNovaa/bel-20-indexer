@@ -48,11 +48,11 @@ impl Parser<'_> {
             prevouts.keys().cloned().collect(),
         );
 
-        let prev_offsets = inscription_outpoint_to_offsets
+        /*let prev_offsets = inscription_outpoint_to_offsets
             .iter()
             .map(|(k, v)| (*k, v.clone()))
             .collect_vec();
-
+*/
         let mut leaked: Option<LeakedInscriptions> = None;
 
         for tx in &block.txs {

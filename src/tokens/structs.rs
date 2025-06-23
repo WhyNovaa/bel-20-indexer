@@ -1,27 +1,5 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct TokenBalanceRest {
-    pub tick: OriginalTokenTick,
-    pub balance: Fixed128,
-    pub transferable_balance: Fixed128,
-    pub transfers: Vec<TokenTransfer>,
-    pub transfers_count: u64,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct TokenProtoRest {
-    pub genesis: InscriptionId,
-    pub tick: OriginalTokenTick,
-    pub max: u64,
-    pub lim: u64,
-    pub dec: u8,
-    pub supply: Fixed128,
-    pub mint_count: u64,
-    pub transfer_count: u64,
-    pub holders: usize,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, PartialOrd, Ord, Eq)]
 pub struct AddressOutPoint {
     pub address: FullHash,
@@ -57,6 +35,12 @@ pub enum Brc4ParseErr {
 pub enum Brc4Error {
     Action(Brc4ActionErr),
     Parse(Brc4ParseErr),
+}
+
+
+pub struct OriginalAddressTick {
+    pub address: FullHash,
+    pub tick: OriginalTokenTick,
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash, Serialize, Deserialize, Default)]
@@ -154,54 +138,6 @@ impl From<OutPoint> for InscriptionId {
         }
     }
 }
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum TokenAction {
-    /// Deploy new token action.
-    Deploy {
-        genesis: InscriptionId,
-        proto: DeployProtoDB,
-        owner: FullHash,
-    },
-    /// Mint new token action.
-    Mint {
-        owner: FullHash,
-        proto: MintProtoWrapper,
-        txid: Txid,
-        vout: u32,
-    },
-    /// Transfer token action.
-    Transfer {
-        location: Location,
-        owner: FullHash,
-        proto: MintProtoWrapper,
-        txid: Txid,
-        vout: u32,
-    },
-    /// Founded move of transfer action.
-    Transferred {
-        // TokenAction::Transfer location
-        transfer_location: Location,
-        // if leaked then sender = recipient
-        // if burnt them recipient = OP_RETURN_HASH
-        recipient: FullHash,
-        txid: Txid,
-        vout: u32,
-    },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TokenTransfer {
-    pub outpoint: OutPoint,
-    pub amount: Fixed128,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TokenMeta {
-    pub genesis: InscriptionId,
-    pub proto: DeployProtoDB,
-}
-
 #[derive(Clone, Debug)]
 pub struct InscriptionTemplate {
     pub genesis: InscriptionId,

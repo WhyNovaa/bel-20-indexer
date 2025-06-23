@@ -15,6 +15,7 @@ pub struct LeakedInscriptions {
     pub coinbase_reward: Option<u64>,
 }
 
+
 struct FeeResult {
     fee: u64,
     fee_offset: u64,
